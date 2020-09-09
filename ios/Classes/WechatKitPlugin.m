@@ -113,11 +113,22 @@ static NSString *const ARGUMENT_KEY_RESULT_AUTHCODE = @"authCode";
 - (instancetype)initWithChannel:(FlutterMethodChannel *)channel {
     self = [super init];
     if (self) {
+        [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(open1:) name:@"OpenUrl1" object:nil];
+        [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(open2:) name:@"OpenUrl2" object:nil];
         _channel = channel;
         _qrauth = [[WechatAuthSDK alloc] init];
         _qrauth.delegate = self;
     }
     return self;
+}
+
+- (void)open1:(NSNotification *)noti{
+    [WXApi handleOpenURL:noti.userInfo[@"url"] delegate:self];
+    
+}
+
+- (void)open2:(NSNotification *)noti{
+    [WXApi handleOpenUniversalLink:noti.userInfo[@"url"] delegate:self];
 }
 
 - (void)handleMethodCall:(FlutterMethodCall *)call
