@@ -2,6 +2,14 @@
 #import <WXApi.h>
 #import <WechatAuthSDK.h>
 
+#define weakifySelf  \
+__weak __typeof(&*self)weakSelf = self;
+
+
+//局域定义了一个__strong的self指针指向self_weak
+#define strongifySelf \
+__strong __typeof(&*weakSelf)self = weakSelf;
+
 @interface WechatKitPlugin () <WXApiDelegate, WechatAuthAPIDelegate>
 
 @end
@@ -25,6 +33,8 @@ static NSString *const METHOD_ISINSTALLED = @"isInstalled";
 static NSString *const METHOD_ISSUPPORTAPI = @"isSupportApi";
 static NSString *const METHOD_OPENWECHAT = @"openWechat";
 static NSString *const METHOD_AUTH = @"auth";
+static NSString *const METHOD_ONAUTH_WEBVIEW = @"authWebview";
+
 static NSString *const METHOD_STARTQRAUTH = @"startQrauth";
 static NSString *const METHOD_STOPQRAUTH = @"stopQrauth";
 static NSString *const METHOD_OPENURL = @"openUrl";
@@ -42,6 +52,7 @@ static NSString *const METHOD_LAUNCHMINIPROGRAM = @"launchMiniProgram";
 static NSString *const METHOD_PAY = @"pay";
 
 static NSString *const METHOD_ONAUTHRESP = @"onAuthResp";
+static NSString *const METHOD_ONAUTH_WEBVIEWRESP = @"authWebviewResp";
 static NSString *const METHOD_ONOPENURLRESP = @"onOpenUrlResp";
 static NSString *const METHOD_ONSHAREMSGRESP = @"onShareMsgResp";
 static NSString *const METHOD_ONSUBSCRIBEMSGRESP = @"onSubscribeMsgResp";
@@ -123,12 +134,21 @@ static NSString *const ARGUMENT_KEY_RESULT_AUTHCODE = @"authCode";
 }
 
 - (void)open1:(NSNotification *)noti{
-    [WXApi handleOpenURL:noti.userInfo[@"url"] delegate:self];
+    weakifySelf
+    dispatch_async(dispatch_get_main_queue(), ^{
+        strongifySelf
+        [WXApi handleOpenURL:noti.userInfo[@"url"] delegate:self];
+    });
     
 }
 
 - (void)open2:(NSNotification *)noti{
-    [WXApi handleOpenUniversalLink:noti.userInfo[@"url"] delegate:self];
+    weakifySelf
+    dispatch_async(dispatch_get_main_queue(), ^{
+        strongifySelf
+        [WXApi handleOpenUniversalLink:noti.userInfo[@"url"] delegate:self];
+
+    });
 }
 
 - (void)handleMethodCall:(FlutterMethodCall *)call
@@ -146,7 +166,9 @@ static NSString *const ARGUMENT_KEY_RESULT_AUTHCODE = @"authCode";
         result([NSNumber numberWithBool:[WXApi openWXApp]]);
     } else if ([METHOD_AUTH isEqualToString:call.method]) {
         [self handleAuthCall:call result:result];
-    } else if ([METHOD_STARTQRAUTH isEqualToString:call.method] ||
+    }else if ([METHOD_ONAUTH_WEBVIEW isEqualToString:call.method]){
+        [self handleAuthWebviewCall:call result:result];
+    }else if ([METHOD_STARTQRAUTH isEqualToString:call.method] ||
                [METHOD_STOPQRAUTH isEqualToString:call.method]) {
         [self handleQRAuthCall:call result:result];
     } else if ([METHOD_OPENURL isEqualToString:call.method]) {
@@ -183,6 +205,16 @@ static NSString *const ARGUMENT_KEY_RESULT_AUTHCODE = @"authCode";
             // do nothing
         }];
     result(nil);
+}
+
+
+- (void)handleAuthWebviewCall:(FlutterMethodCall *)call result:(FlutterResult)result{
+    SendAuthReq* req =[[SendAuthReq alloc ] init];
+     req.scope = call.arguments[ARGUMENT_KEY_SCOPE];
+      req.state = call.arguments[ARGUMENT_KEY_STATE];
+     [WXApi sendAuthReq:req viewController:[UIApplication sharedApplication].keyWindow.rootViewController delegate:self completion:^(BOOL success) {
+         
+     }];
 }
 
 - (void)handleQRAuthCall:(FlutterMethodCall *)call

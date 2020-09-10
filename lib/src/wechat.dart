@@ -33,6 +33,8 @@ class Wechat {
   static const String _METHOD_ISSUPPORTAPI = 'isSupportApi';
   static const String _METHOD_OPENWECHAT = 'openWechat';
   static const String _METHOD_AUTH = 'auth';
+  static const String _METHOD_ONAUTH_WEBVIEW = "authWebview";
+
   static const String _METHOD_STARTQRAUTH = 'startQrauth';
   static const String _METHOD_STOPQRAUTH = 'stopQrauth';
   static const String _METHOD_OPENURL = 'openUrl';
@@ -50,6 +52,8 @@ class Wechat {
   static const String _METHOD_PAY = 'pay';
 
   static const String _METHOD_ONAUTHRESP = 'onAuthResp';
+
+  static const String _METHOD_WEBVIEW_ONAUTHRESP = 'onAuthWebview';
   static const String _METHOD_ONOPENURLRESP = 'onOpenUrlResp';
   static const String _METHOD_ONSHAREMSGRESP = 'onShareMsgResp';
   static const String _METHOD_ONSUBSCRIBEMSGRESP = 'onSubscribeMsgResp';
@@ -264,6 +268,17 @@ class Wechat {
   }) {
     assert(scope?.isNotEmpty ?? false);
     return _channel.invokeMethod<void>(_METHOD_AUTH, <String, dynamic>{
+      _ARGUMENT_KEY_SCOPE: scope.join(','), // Scope
+      if (state != null) _ARGUMENT_KEY_STATE: state,
+    });
+  }
+
+  Future<void> authWebview({
+    @required List<String> scope,
+    String state,
+  }) {
+    assert(scope?.isNotEmpty ?? false);
+    return _channel.invokeMethod<void>(_METHOD_ONAUTH_WEBVIEW, <String, dynamic>{
       _ARGUMENT_KEY_SCOPE: scope.join(','), // Scope
       if (state != null) _ARGUMENT_KEY_STATE: state,
     });
